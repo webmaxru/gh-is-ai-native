@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "node is required to run gh-is-ai-native. Install Node.js 24 or newer and try again." >&2
+  exit 1
+fi
+
+exec node "$SCRIPT_DIR/gh-is-ai-native.mjs" "$@"
