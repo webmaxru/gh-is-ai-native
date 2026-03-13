@@ -2237,6 +2237,15 @@ function getVerdict(score) {
   if (score >= 30) return "AI-Assisted";
   return "Traditional";
 }
+function calculateTopLevelVerdictScore(perAssistantScores, fallbackScore = 0) {
+  if (!Array.isArray(perAssistantScores) || perAssistantScores.length === 0) {
+    return fallbackScore;
+  }
+  return perAssistantScores.reduce((maxScore, assistant) => {
+    const assistantScore = Number.isFinite(assistant?.score) ? assistant.score : 0;
+    return Math.max(maxScore, assistantScore);
+  }, 0);
+}
 
 // ../core/src/scan-orchestrator.js
 function buildRepositoryMetadata(metadata) {
@@ -2278,11 +2287,12 @@ async function scanRepository({ fileTreeSource, configSource = new BundledConfig
   const primitiveResults = scanPrimitives(paths, primitives);
   const score = calculateOverallScore(primitiveResults);
   const perAssistant = calculatePerAssistantScores(primitiveResults, assistants);
+  const verdictScore = calculateTopLevelVerdictScore(perAssistant, score);
   return {
     source: metadata.kind || "unknown",
     ...buildRepositoryMetadata(metadata),
     score,
-    verdict: getVerdict(score),
+    verdict: getVerdict(verdictScore),
     scanned_at: (/* @__PURE__ */ new Date()).toISOString(),
     primitives: primitiveResults,
     per_assistant: perAssistant,
