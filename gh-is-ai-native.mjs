@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-#!/usr/bin/env node
 
 // bin/cli.js
 import { access } from "node:fs/promises";
@@ -9,12 +8,21 @@ import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 
 // ../core/src/config-source.js
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = dirname(__filename);
-var CONFIG_DIR = join(__dirname, "../config");
+var CONFIG_DIR_CANDIDATES = [join(__dirname, "../config"), join(__dirname, "config")];
+function resolveBundledConfigPath(fileName) {
+  for (const configDir of CONFIG_DIR_CANDIDATES) {
+    const candidatePath = join(configDir, fileName);
+    if (existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+  return join(CONFIG_DIR_CANDIDATES[0], fileName);
+}
 function validatePrimitive(primitive, index) {
   if (!primitive.name || typeof primitive.name !== "string") {
     return `primitives[${index}].name must be a non-empty string`;
@@ -99,10 +107,10 @@ var ConfigSource = class {
 };
 var BundledConfigSource = class extends ConfigSource {
   loadPrimitives() {
-    return validatePrimitivesConfig(readJsonFile(join(CONFIG_DIR, "primitives.json"), "primitives"));
+    return validatePrimitivesConfig(readJsonFile(resolveBundledConfigPath("primitives.json"), "primitives"));
   }
   loadAssistants() {
-    return validateAssistantsConfig(readJsonFile(join(CONFIG_DIR, "assistants.json"), "assistants"));
+    return validateAssistantsConfig(readJsonFile(resolveBundledConfigPath("assistants.json"), "assistants"));
   }
 };
 
@@ -179,7 +187,7 @@ async function handleErrorResponse(resp, context) {
   }
   if (resp.status === 403) {
     throw new GitHubApiError(
-      body.message || "Repository is private or access is forbidden. Only public repositories are supported.",
+      body.message || "Repository is not accessible with the current GitHub credentials. It may be private, or access may be forbidden.",
       403,
       rateRemaining,
       rateReset
@@ -187,7 +195,7 @@ async function handleErrorResponse(resp, context) {
   }
   if (resp.status === 404) {
     throw new GitHubApiError(
-      "Repository not found. Please check the URL and make sure the repository exists.",
+      "Repository was not found or is not accessible with the current GitHub credentials. Check the URL, or try a local or authenticated scan.",
       404,
       rateRemaining,
       rateReset
@@ -2453,6 +2461,7 @@ async function scanLocalTarget(rootPath = ".", { configSource, ignoreDirectories
 }
 
 // bin/cli.js
+var CLI_VERSION = "0.1.1";
 var HELP_TEXT = `is-ai-native CLI
 
 Usage:
@@ -2494,7 +2503,8 @@ async function main() {
     return;
   }
   if (values.version) {
-    process.stdout.write("@is-ai-native/cli 0.1.0\n");
+    process.stdout.write(`@is-ai-native/cli ${CLI_VERSION}
+`);
     return;
   }
   const [command, target] = positionals;
