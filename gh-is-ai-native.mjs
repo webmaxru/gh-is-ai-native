@@ -7,7 +7,7 @@ import { parseArgs } from "node:util";
 // ../cli/package.json
 var package_default = {
   name: "is-ai-native",
-  version: "0.1.2",
+  version: "0.1.4",
   description: "CLI scanner for AI-native repository assessment",
   type: "module",
   main: "./dist/index.js",
