@@ -1,10 +1,58 @@
 #!/usr/bin/env node
 
-// bin/cli.js
+// ../cli/bin/cli.js
 import { access } from "node:fs/promises";
 import { parseArgs } from "node:util";
 
-// src/index.js
+// ../cli/package.json
+var package_default = {
+  name: "is-ai-native",
+  version: "0.1.2",
+  description: "CLI scanner for AI-native repository assessment",
+  type: "module",
+  main: "./dist/index.js",
+  bin: {
+    "is-ai-native": "dist/cli.js"
+  },
+  exports: {
+    ".": "./dist/index.js"
+  },
+  files: [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  scripts: {
+    build: "node ./scripts/build.mjs",
+    prepack: "npm run build",
+    test: "node --test tests/*.test.js"
+  },
+  keywords: [
+    "ai",
+    "cli",
+    "copilot",
+    "github",
+    "scanner"
+  ],
+  license: "MIT",
+  repository: {
+    type: "git",
+    url: "git+https://github.com/webmaxru/is-ai-native.git",
+    directory: "packages/cli"
+  },
+  homepage: "https://github.com/webmaxru/is-ai-native/tree/main/packages/cli",
+  bugs: {
+    url: "https://github.com/webmaxru/is-ai-native/issues"
+  },
+  engines: {
+    node: ">=22"
+  },
+  devDependencies: {
+    esbuild: "^0.25.12"
+  }
+};
+
+// ../cli/src/index.js
 import { resolve } from "node:path";
 
 // ../core/src/config-source.js
@@ -2378,7 +2426,7 @@ function parseRepoUrl(input) {
   };
 }
 
-// src/formatters.js
+// ../cli/src/formatters.js
 function escapeCsv(value) {
   const stringValue = value == null ? "" : String(value);
   if (stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")) {
@@ -2484,7 +2532,7 @@ function formatResult(result, format = "json") {
   return JSON.stringify(result, null, 2);
 }
 
-// src/index.js
+// ../cli/src/index.js
 async function scanGitHubTarget(repoInput, { token, branch, configSource } = {}) {
   const parsed = parseRepoUrl(repoInput);
   return scanRepository(
@@ -2508,8 +2556,7 @@ async function scanLocalTarget(rootPath = ".", { configSource, ignoreDirectories
   );
 }
 
-// bin/cli.js
-var CLI_VERSION = "0.1.1";
+// ../cli/bin/cli.js
 var HELP_TEXT = `is-ai-native CLI
 
 Usage:
@@ -2551,7 +2598,7 @@ async function main() {
     return;
   }
   if (values.version) {
-    process.stdout.write(`@is-ai-native/cli ${CLI_VERSION}
+    process.stdout.write(`${package_default.name} ${package_default.version}
 `);
     return;
   }
