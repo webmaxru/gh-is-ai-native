@@ -24,8 +24,9 @@ var package_default = {
   ],
   scripts: {
     build: "node ./scripts/build.mjs",
+    "build:standalone": "node ./scripts/build-standalone.mjs",
     prepack: "npm run build",
-    test: "node --test tests/*.test.js"
+    test: "node --test tests/cli.test.js tests/formatters.test.js"
   },
   keywords: [
     "ai",
@@ -61,7 +62,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = dirname(__filename);
-var CONFIG_DIR_CANDIDATES = [join(__dirname, "../config"), join(__dirname, "config")];
+var CONFIG_DIR_CANDIDATES = [
+  join(__dirname, "../config"),
+  join(__dirname, "config"),
+  join(dirname(process.execPath), "config")
+];
 function resolveBundledConfigPath(fileName) {
   for (const configDir of CONFIG_DIR_CANDIDATES) {
     const candidatePath = join(configDir, fileName);
