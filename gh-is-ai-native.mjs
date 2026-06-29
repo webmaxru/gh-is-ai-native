@@ -2205,36 +2205,47 @@ minimatch.escape = escape;
 minimatch.unescape = unescape;
 
 // ../core/src/scanner.js
+var MINIMATCH_OPTIONS = { dot: true };
+var matcherCache = /* @__PURE__ */ new Map();
+function getMatcher(pattern) {
+  let matcher = matcherCache.get(pattern);
+  if (!matcher) {
+    matcher = new Minimatch(pattern, MINIMATCH_OPTIONS);
+    matcherCache.set(pattern, matcher);
+  }
+  return matcher;
+}
 function scanPrimitives(paths, primitiveDefs) {
   return primitiveDefs.map((primitive) => {
     const assistantResults = {};
-    const allMatchedFiles = [];
+    const allMatchedFiles = /* @__PURE__ */ new Set();
     for (const [assistantId, config] of Object.entries(primitive.assistants)) {
-      const matchedFiles = [];
+      const matchedFiles = /* @__PURE__ */ new Set();
       for (const pattern of config.patterns) {
+        const matcher = getMatcher(pattern);
         for (const filePath of paths) {
-          if (minimatch(filePath, pattern, { dot: true })) {
-            if (!matchedFiles.includes(filePath)) {
-              matchedFiles.push(filePath);
-            }
+          if (matchedFiles.has(filePath)) {
+            continue;
+          }
+          if (matcher.match(filePath)) {
+            matchedFiles.add(filePath);
           }
         }
       }
+      const matchedFilesList = [...matchedFiles];
       assistantResults[assistantId] = {
-        detected: matchedFiles.length > 0,
-        matched_files: matchedFiles
+        detected: matchedFilesList.length > 0,
+        matched_files: matchedFilesList
       };
       for (const filePath of matchedFiles) {
-        if (!allMatchedFiles.includes(filePath)) {
-          allMatchedFiles.push(filePath);
-        }
+        allMatchedFiles.add(filePath);
       }
     }
     return {
       name: primitive.name,
       category: primitive.category,
-      detected: allMatchedFiles.length > 0,
-      matched_files: allMatchedFiles,
+      detected: allMatchedFiles.size > 0,
+      matched_files: [...allMatchedFiles],
       description: primitive.description,
       doc_links: primitive.docLinks,
       assistant_results: assistantResults
